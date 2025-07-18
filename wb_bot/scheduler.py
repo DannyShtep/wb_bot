@@ -1,5 +1,5 @@
 import asyncio
-from .wb_api import get_available_slots, book_slot
+from wb_api import get_available_slots, book_slot # ИЗМЕНЕНО: Абсолютный импорт
 from aiogram import types
 
 async def start_monitoring(user_id, data, message: types.Message):
