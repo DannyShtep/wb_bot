@@ -1,8 +1,8 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from .handlers import dp
-from .config import BOT_TOKEN
+from handlers import dp # ИЗМЕНЕНО: Абсолютный импорт
+from config import BOT_TOKEN # ИЗМЕНЕНО: Абсолютный импорт
 
 bot = Bot(token=BOT_TOKEN)
 storage = MemoryStorage()
