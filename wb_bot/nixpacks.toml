@@ -1,9 +1,12 @@
+[build]
+builder = "NIXPACKS"
+
 [phases.setup]
-nixpkgs = ["python3", "gcc", "libffi", "openssl", "pkg-config"]
+nixpkgs = ["python311", "gcc", "libffi", "openssl", "pkg-config"]
 
 [phases.install]
 cmds = [
-  "python3 -m venv /opt/venv",
+  "python3.11 -m venv /opt/venv",
   ". /opt/venv/bin/activate",
   "pip install --upgrade pip",
   "pip install wheel",
