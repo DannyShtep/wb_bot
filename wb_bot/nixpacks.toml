@@ -1,17 +1,8 @@
 [build]
 builder = "NIXPACKS"
 
-[phases.setup]
-nixpkgs = ["python311", "gcc", "libffi", "openssl", "pkg-config"]
-
-[phases.install]
-cmds = [
-  "python3.11 -m venv /opt/venv",
-  ". /opt/venv/bin/activate",
-  "pip install --upgrade pip",
-  "pip install wheel",
-  "pip install -r requirements.txt"
-]
+[variables]
+PYTHON_VERSION = "3.11"
 
 [start]
 cmd = "python bot.py"
