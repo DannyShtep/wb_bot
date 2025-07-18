@@ -1,16 +1,23 @@
 from aiogram import types
-from aiogram.dispatcher import FSMContext, Dispatcher # ИЗМЕНЕНО: Импортируем Dispatcher
+from aiogram.dispatcher import FSMContext, Dispatcher
 from states import BookingState
 from scheduler import start_monitoring
 from wb_api import get_available_draft_supplies
+from keyboards import get_main_menu_keyboard, get_cancel_monitoring_keyboard # ИЗМЕНЕНО: Импорт клавиатур
 
-# ИЗМЕНЕНО: Удаляем глобальную инициализацию dp здесь.
-# Вместо этого, создаем функцию, которая будет принимать dp.
-
-def register_handlers(dp: Dispatcher): # ИЗМЕНЕНО: Создаем функцию для регистрации обработчиков
+def register_handlers(dp: Dispatcher):
     @dp.message_handler(commands=['start'], state='*')
     async def start_cmd(message: types.Message, state: FSMContext):
-        await message.answer("👋 Привет! Введи свой WB API токен:")
+        await state.finish() # Очищаем любое предыдущее состояние
+        await message.answer(
+            "Привет, я бот автобронирования поставок на WB по твоим критериям - введи свой токен WB API, укажи необходимую информацию и ожидай бронирования! Бот обязательно пришлет тебе уведомление об успешном бронировании.",
+            reply_markup=get_main_menu_keyboard() # ИЗМЕНЕНО: Отправляем главное меню
+        )
+
+    @dp.message_handler(text="Начать бронирование", state='*') # Новый обработчик для кнопки "Начать бронирование"
+    async def start_booking_from_menu(message: types.Message, state: FSMContext):
+        await state.finish() # Очищаем состояние, если пользователь нажал "Начать бронирование" из меню
+        await message.answer("👋 Введи свой WB API токен:")
         await BookingState.waiting_for_token.set()
 
     @dp.message_handler(state=BookingState.waiting_for_token)
@@ -19,7 +26,7 @@ def register_handlers(dp: Dispatcher): # ИЗМЕНЕНО: Создаем фун
         try:
             supplies = await get_available_draft_supplies(message.text.strip())
             if not supplies:
-                await message.answer("❌ У вас нет черновиков поставок.")
+                await message.answer("❌ У вас нет черновиков поставок.", reply_markup=get_main_menu_keyboard()) # ИЗМЕНЕНО: Возвращаем главное меню
                 await state.finish()
                 return
             text = "📦 Найдены черновики поставок:\n\n"
@@ -32,7 +39,7 @@ def register_handlers(dp: Dispatcher): # ИЗМЕНЕНО: Создаем фун
             await message.answer(text + "\n👉 Выбери нужную поставку:", reply_markup=keyboard)
             await BookingState.waiting_for_supply_choice.set()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {str(e)}")
+            await message.answer(f"❌ Ошибка: {str(e)}", reply_markup=get_main_menu_keyboard()) # ИЗМЕНЕНО: Возвращаем главное меню
             await state.finish()
 
     @dp.callback_query_handler(lambda c: c.data.startswith("choose_supply:"), state=BookingState.waiting_for_supply_choice)
@@ -65,18 +72,18 @@ def register_handlers(dp: Dispatcher): # ИЗМЕНЕНО: Создаем фун
         try:
             start_str, end_str = map(str.strip, message.text.split(','))
             await state.update_data(start_date=start_str, end_date=end_str)
-            # Кнопка "Отменить"
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add("🚫 Отменить планирование")
-            await message.answer("🔍 Начинаю мониторинг слотов...", reply_markup=keyboard)
+            # Кнопка "Отменить" - теперь это get_cancel_monitoring_keyboard()
+            await message.answer("🔍 Начинаю мониторинг слотов...", reply_markup=get_cancel_monitoring_keyboard()) # ИЗМЕНЕНО: Используем новую клавиатуру
             data = await state.get_data()
-            await state.finish()
+            await state.finish() # Мониторинг начинается, состояние завершено
             await start_monitoring(message.chat.id, data, message)
-        except:
-            await message.answer("⚠️ Неверный формат. Введите как: 2025-07-20,2025-07-25")
+            # После завершения мониторинга (успешно или нет), возвращаемся в главное меню
+            await message.answer("Мониторинг завершен.", reply_markup=get_main_menu_keyboard()) # ИЗМЕНЕНО: Возвращаем главное меню
+        except Exception as e: # Ловим общие исключения, включая ошибки формата даты
+            await message.answer(f"⚠️ Неверный формат даты или другая ошибка: {str(e)}. Введите как: 2025-07-20,2025-07-25", reply_markup=get_main_menu_keyboard()) # ИЗМЕНЕНО: Возвращаем главное меню
+            await state.finish() # Завершаем состояние при ошибке
 
     @dp.message_handler(lambda msg: "отменить" in msg.text.lower(), state="*")
     async def cancel_planning(message: types.Message, state: FSMContext):
         await state.finish()
-        keyboard = types.ReplyKeyboardRemove()
-        await message.answer("❌ Планирование отменено.", reply_markup=keyboard)
+        await message.answer("❌ Планирование отменено.", reply_markup=get_main_menu_keyboard()) # ИЗМЕНЕНО: Возвращаем главное меню
