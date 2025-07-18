@@ -1,9 +1,9 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram import Dispatcher
-from .states import BookingState
-from .scheduler import start_monitoring
-from .wb_api import get_available_draft_supplies
+from states import BookingState # ИЗМЕНЕНО: Абсолютный импорт
+from scheduler import start_monitoring # ИЗМЕНЕНО: Абсолютный импорт
+from wb_api import get_available_draft_supplies # ИЗМЕНЕНО: Абсолютный импорт
 
 dp = Dispatcher()
 
