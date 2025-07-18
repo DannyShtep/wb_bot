@@ -1,0 +1,14 @@
+[phases.setup]
+nixpkgs = ["python3", "gcc", "libffi", "openssl", "pkg-config"]
+
+[phases.install]
+cmds = [
+  "python3 -m venv /opt/venv",
+  ". /opt/venv/bin/activate",
+  "pip install --upgrade pip",
+  "pip install wheel",
+  "pip install -r requirements.txt"
+]
+
+[start]
+cmd = "python bot.py"
